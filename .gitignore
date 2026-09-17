@@ -1,3 +1,9 @@
 .godot/
 build/web/
 source_assets/
+
+.env*
+!.env.example
+supabase/*.local.sql
+supabase/.temp/
+build/standalone-web.zip

@@ -1,12 +1,20 @@
 extends Node
 
 func _ready() -> void:
+	OS.set_environment("ONEFLAG_OFFLINE", "1")
+	SupabaseClient.clear_session()
 	var main := preload("res://scenes/Main.tscn").instantiate()
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	assert(main.current_screen != null and main.current_screen.name == "StartScreen")
+	assert(not SupabaseClient.is_logged_in(), "fresh run should be a guest")
+	assert(not SupabaseClient.is_configured(), "smoke test explicitly uses offline mode")
 
+	GameManager.request_screen("login")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert(main.current_screen != null and main.current_screen.name == "LoginScreen")
 	GameManager.request_screen("game")
 	await get_tree().process_frame
 	await get_tree().process_frame

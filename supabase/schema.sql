@@ -1,0 +1,2 @@
+-- Superseded. Use migrations/20260916093954_standalone_guest_game.sql.
+-- Never grant clients direct score writes or accept claimed scores.

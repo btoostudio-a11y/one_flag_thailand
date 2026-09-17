@@ -16,6 +16,8 @@ config/features=PackedStringArray("4.7")
 
 [autoload]
 
+SupabaseClient="*res://scripts/supabase_client.gd"
+
 GameManager="*res://scripts/game_manager.gd"
 ScoreManager="*res://scripts/score_manager.gd"
 LeaderboardManager="*res://scripts/leaderboard_manager.gd"

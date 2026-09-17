@@ -41,7 +41,10 @@ func load_optional_art(sprite: Sprite2D) -> void:
 
 
 func _process(delta: float) -> void:
-	position.y -= speed * delta
+	if SupabaseClient.active:
+		position.y = 2050.0 - speed * (SupabaseClient.elapsed() - float(get_meta("spawn_ms", 0.0)) / 1000.0)
+	else:
+		position.y -= speed * delta
 	rotation += spin_speed * delta * (0.35 if object_type == "bomb" else 0.10)
 	if position.y < -240.0:
 		queue_free()

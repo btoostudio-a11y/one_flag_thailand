@@ -1,0 +1,3 @@
+project_id = "one-flag-game"
+[functions.standalone-game]
+verify_jwt = false

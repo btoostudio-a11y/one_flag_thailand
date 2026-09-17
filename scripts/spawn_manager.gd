@@ -17,10 +17,15 @@ var running := false
 var last_x := -999.0
 var last_kind := ""
 var bonus_thai_spawned := 0
+var server_plan: Array = []
+var server_index := 0
+
 var rng := RandomNumberGenerator.new()
 
 func setup(layer: Node2D) -> void:
 	target_layer = layer
+	if SupabaseClient.active:
+		server_plan = SupabaseClient.round_plan
 	rng.randomize()
 	elapsed = 0.0
 	accumulator = 0.35
@@ -32,6 +37,12 @@ func stop() -> void:
 
 func _process(delta: float) -> void:
 	if not running or target_layer == null:
+		return
+	if SupabaseClient.active:
+		elapsed = SupabaseClient.elapsed()
+		while server_index < server_plan.size() and float(server_plan[server_index]["at"]) <= elapsed * 1000.0:
+			spawn_server_object(server_plan[server_index])
+			server_index += 1
 		return
 	elapsed += delta
 	accumulator += delta
@@ -48,6 +59,15 @@ func _process(delta: float) -> void:
 	if bonus_thai_spawned < GameConfig.BONUS_THAI_FLAGS and elapsed >= bonus_step * float(bonus_thai_spawned + 1):
 		spawn_one(float(data["speed"]), "thai")
 		bonus_thai_spawned += 1
+
+func spawn_server_object(item: Dictionary) -> void:
+	var object := SCENES[str(item["kind"])].instantiate() as FallingObject
+	object.speed = float(item["speed"])
+	object.set_meta("server_id", int(item["id"]))
+	object.set_meta("spawn_ms", float(item["at"]))
+	object.position = Vector2(float(item["x"]), 2050.0)
+	object.tapped.connect(_relay_tap)
+	target_layer.add_child(object)
 
 func spawn_one(object_speed: float, forced_kind: String = "") -> void:
 	var kind := forced_kind if not forced_kind.is_empty() else choose_kind()

@@ -26,11 +26,15 @@ func _ready() -> void:
 	stack.size = Vector2(810, 1120)
 	stack.add_theme_constant_override("separation", 16)
 	card.add_child(stack)
-	var entries := LeaderboardManager.get_entries(int(GameManager.last_result.get("score", 0)))
+	var entries: Array = await LeaderboardManager.get_entries(int(GameManager.last_result.get("score", 0)))
+	if entries.is_empty():
+		var empty := UIFactory.make_label("No verified account scores yet.\nGuest scores are saved privately.", 34)
+		empty.custom_minimum_size = Vector2(810,200)
+		stack.add_child(empty)
 	for index in range(entries.size()):
 		var entry: Dictionary = entries[index]
 		var row := Panel.new()
-		row.custom_minimum_size = Vector2(810, 125)
+		row.custom_minimum_size = Vector2(810, 92)
 		var is_you := str(entry.get("name", "")) == "You"
 		row.add_theme_stylebox_override("panel", UIFactory.panel_style(Color("165fc4") if is_you else Color(0.04, 0.25, 0.55, 0.86), 28, Color("ffe04b") if is_you else Color(1, 1, 1, 0.18), 4))
 		stack.add_child(row)

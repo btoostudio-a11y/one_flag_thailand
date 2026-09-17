@@ -1,10 +1,10 @@
 # ONE FLAG THAILAND — Falling Tap Game
 
-A mobile-first Godot 4 prototype using the supplied artwork. The playable loop is start, countdown, 25-second fall, landing, results, replay, and local leaderboard.
+A mobile-first Godot 4 prototype using the supplied artwork. The playable loop is start, countdown, 25-second fall, landing, results, replay, and server-backed scores.
 
 ## Run
 
-Open `project.godot` in Godot 4.x and press **F6/F5**. The entry point is `res://scenes/Main.tscn`. Mouse clicks work on desktop; `Area2D.input_event` also handles `InputEventScreenTouch` on phones.
+Open `project.godot` in Godot 4.x and press **F5**. The entry point is `res://scenes/Main.tscn`. Mouse clicks work on desktop; `Area2D.input_event` also handles `InputEventScreenTouch` on phones.
 
 ## Tuning
 
@@ -38,20 +38,25 @@ Drop optional OGG audio into `assets/audio/` using: `tap_correct.ogg`, `tap_wron
 - `ui/`: reusable HUD/pause scene stubs for editor expansion.
 - `tests/`: headless end-to-end smoke test.
 
-`LeaderboardManager.get_entries()` is isolated from gameplay. Replace that service with a Supabase/REST request later without changing the game screen.
+`LeaderboardManager.get_entries()` reads the verified account top-10 from the game API.
+No mock rows are displayed as real rankings.
 
-## Web export
+## Guest scores and optional login
 
-Install the Godot 4.7 export templates from **Editor → Manage Export Templates**. Then choose **Project → Export → Web** and export to `build/web/index.html`. The included preset uses the compatibility renderer, no threads, portrait canvas scaling, and mobile-friendly input. Upload every generated file in `build/web/` to an HTTPS static host.
+The standalone game saves Guest rounds before login. Server-generated objects and
+server receive times determine the stored score. Players can optionally create an
+email-confirmed account and log in to claim their previous Guest rounds.
 
-CLI equivalent after templates are installed:
-
-```powershell
-Godot_v4.7-stable_win64.exe --headless --path C:\Users\User\one_flag_thailand --export-release Web build\web\index.html
-```
-
-Run the smoke test with:
+**Run the prepared Web build:**
 
 ```powershell
-Godot_v4.7-stable_win64.exe --headless --path C:\Users\User\one_flag_thailand --scene res://tests/SmokeTest.tscn
+python tools/serve.py
 ```
+
+Open http://localhost:8060 and play a full round. The result displays
+**SAVED TO DATABASE** and a Round ID to inspect in Supabase `standalone_rounds`.
+This is a Godot project; no `npm run dev` or website server is needed.
+
+See [testing, building and account setup](docs/testing.md) for full instructions.
+The gameplay API is deployed as the `standalone-game` Supabase Edge Function.
+The presentation website is not required and its UI was not changed for this work.

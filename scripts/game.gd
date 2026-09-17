@@ -14,6 +14,7 @@ var pause_panel: Control
 var countdown_elapsed := 0.0
 var elapsed := 0.0
 var game_started := false
+var preparing := true
 var finishing := false
 var shake_time := 0.0
 var base_position := Vector2.ZERO
@@ -43,6 +44,21 @@ func _ready() -> void:
 	ScoreManager.score_changed.connect(func(value): score_value.text = str(value))
 	ScoreManager.combo_changed.connect(func(multiplier, _chain): combo_value.text = "x%d" % multiplier)
 	base_position = position
+	_prepare_round()
+
+func _prepare_round() -> void:
+	countdown_label.text = "CONNECTING"
+	countdown_label.add_theme_font_size_override("font_size", 80)
+	var ok := await SupabaseClient.start_round()
+	if not ok:
+		countdown_label.text = "CONNECTION FAILED"
+		var back := UIFactory.make_button("BACK / RETRY", Color("1769d2"), Vector2(700, 120))
+		back.position = Vector2(190, 1150)
+		back.pressed.connect(func(): GameManager.request_screen("start"))
+		add_child(back)
+		return
+	countdown_label.add_theme_font_size_override("font_size", 210)
+	preparing = false
 
 func build_hud() -> void:
 	var hud := Control.new()
@@ -63,6 +79,7 @@ func build_hud() -> void:
 	pause_button.position = Vector2(935, 78)
 	pause_button.add_theme_font_size_override("font_size", 48)
 	pause_button.pressed.connect(_pause_game)
+	pause_button.visible = not SupabaseClient.is_configured()
 	hud.add_child(pause_button)
 
 func make_hud_cell(parent: Control, title: String, value: String, pos: Vector2, width: float) -> Label:
@@ -113,10 +130,13 @@ func build_pause_menu() -> void:
 		stack.add_child(button)
 
 func _process(delta: float) -> void:
-	if finishing:
+	if finishing or preparing:
 		return
 	if not game_started:
-		countdown_elapsed += delta
+		if SupabaseClient.active:
+			countdown_elapsed = SupabaseClient.elapsed() + 4.0
+		else:
+			countdown_elapsed += delta
 		var next_text := "3"
 		if countdown_elapsed >= 3.0: next_text = "GO!"
 		elif countdown_elapsed >= 2.0: next_text = "1"
@@ -131,7 +151,10 @@ func _process(delta: float) -> void:
 			countdown_label.visible = false
 			spawn_manager.setup(object_layer)
 		return
-	elapsed += delta
+	if SupabaseClient.active:
+		elapsed = maxf(0.0, SupabaseClient.elapsed())
+	else:
+		elapsed += delta
 	var altitude := maxi(0, int(round((1.0 - elapsed / GameConfig.GAME_DURATION) * GameConfig.START_ALTITUDE)))
 	altitude_value.text = "%d m" % altitude
 	background.set_altitude(altitude)
@@ -178,6 +201,8 @@ func _input(event: InputEvent) -> void:
 func _on_object_tapped(kind: String, object: FallingObject) -> void:
 	if finishing or not game_started:
 		return
+	if SupabaseClient.active:
+		SupabaseClient.hit(int(object.get_meta("server_id", -1)))
 	if kind == "thai":
 		var gained := ScoreManager.collect_thai()
 		AudioManager.play("tap_correct")
@@ -231,6 +256,8 @@ func show_smoke(world_position: Vector2) -> void:
 
 func finish_game() -> void:
 	finishing = true
+	if SupabaseClient.active:
+		SupabaseClient.finish_round()
 	spawn_manager.stop()
 	for child in object_layer.get_children():
 		child.queue_free()
@@ -243,6 +270,8 @@ func finish_game() -> void:
 	landing.tween_callback(func(): GameManager.request_screen("result"))
 
 func _pause_game() -> void:
+	if SupabaseClient.active:
+		return
 	pause_panel.visible = true
 	get_tree().paused = true
 

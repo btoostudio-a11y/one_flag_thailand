@@ -4,7 +4,8 @@ const SCREENS := {
 	"start": preload("res://scenes/StartScreen.tscn"),
 	"game": preload("res://scenes/Game.tscn"),
 	"result": preload("res://scenes/ResultScreen.tscn"),
-	"leaderboard": preload("res://scenes/Leaderboard.tscn")
+	"leaderboard": preload("res://scenes/Leaderboard.tscn"),
+	"login": preload("res://scenes/LoginScreen.tscn")
 }
 
 var current_screen: Node
